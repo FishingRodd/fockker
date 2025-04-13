@@ -38,6 +38,10 @@ var RunCommand = cli.Command{
 			Name:  "name",
 			Usage: `容器名称`,
 		},
+		cli.StringFlag{
+			Name:  "v",
+			Usage: `宿主机与容器挂载，实现持久化存储`,
+		},
 	},
 	Action: func(c *cli.Context) error {
 		if len(c.Args()) < 1 {
@@ -57,11 +61,12 @@ var RunCommand = cli.Command{
 		createTTY := c.Bool("it")         // 是否创建可交互终端
 		detach := c.Bool("d")             // 是否分离父子进程（即后台运行）
 		containerName := c.String("name") // 容器运行名称
+		volume := c.String("v")           // 宿主机与容器挂载
 
 		if createTTY && detach {
 			return fmt.Errorf(`不可同时指定 'it' 创建终端 与 'd' 后台运行`)
 		}
-		RunC(cmdArry, imgName, containerName, createTTY)
+		RunC(cmdArry, imgName, containerName, createTTY, volume)
 		return nil
 	},
 }
