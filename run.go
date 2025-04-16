@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"fockker/container"
 	log "github.com/sirupsen/logrus"
 	"os"
@@ -23,7 +24,6 @@ func RunC(cmdArry []string, imgName string, containerName string, createTTY bool
 
 	// 保存容器信息
 	containerName, _, err := container.RecordContainerInfo(processCmd.Process.Pid, cmdArry, containerName, volume)
-	// _ = containerID
 	if err != nil {
 		log.Errorf("保存容器信息异常 %v", err)
 		return
@@ -40,11 +40,11 @@ func RunC(cmdArry []string, imgName string, containerName string, createTTY bool
 		container.DeleteWorkSpace(volume, containerName)
 		log.Infof(`容器 %s 退出成功`, containerName)
 	}
+	fmt.Printf("容器 %s 启动成功\n", containerName)
 }
 
 func sendInitCommand(cmdArry []string, writePipe *os.File) {
 	command := strings.Join(cmdArry, " ")
-	log.Infof(`正在初始化容器`)
 	_, err := writePipe.WriteString(command)
 	if err != nil {
 		log.Errorf(`write管道写入异常 -- %s`, command)

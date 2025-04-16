@@ -2,12 +2,14 @@ package container
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"text/tabwriter"
 	"time"
 )
@@ -33,6 +35,23 @@ func ListContainers() {
 		if err != nil {
 			log.Errorf("获取容器信息异常 %v", err)
 			continue
+		}
+		// 检查RUNNING状态的容器是否仍然存活
+		if tmpContainer.Status == RUNNING {
+			// 不存活则删除
+			pid, _ := strconv.Atoi(tmpContainer.Pid)
+			err = syscall.Kill(pid, 0)
+			if errors.Is(err, syscall.ESRCH) {
+				// 返回的错误是os.ErrProcess, 表示进程不存在
+				tmpContainer.Status = STOP
+				err = updateContainerInfoByName(tmpContainer)
+				if err != nil {
+					log.Errorf("更新容器%s信息异常 %v", tmpContainer.Name, err)
+					continue
+				}
+				RemoveContainer(tmpContainer.Name)
+				continue
+			}
 		}
 		// 添加到containers
 		containers = append(containers, tmpContainer)
@@ -73,17 +92,6 @@ func getContainerInfo(entry os.DirEntry) (*ContainerInfo, error) {
 	}
 
 	return &containerInfo, nil
-}
-
-// 生成容器ID
-func generateContainerID(n int) string {
-	letterBytes := "1234567890"
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
-	}
-	return string(b)
 }
 
 // RecordContainerInfo 记录容器信息，启用于容器创建时
@@ -142,4 +150,50 @@ func RecordContainerInfo(containerPID int, cmdArry []string, containerName strin
 
 	// 返回容器名、容器ID、err
 	return containerName, containerID, nil
+}
+
+// 生成容器ID
+func generateContainerID(n int) string {
+	letterBytes := "1234567890"
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
+}
+
+// 根据容器名 获取 配置文件中的信息
+func getContainerInfoByName(containerName string) (ContainerInfo, error) {
+	dirURL := fmt.Sprintf(DefaultInfoPath, containerName)
+	configFilePath := dirURL + ConfigName
+	contentBytes, err := os.ReadFile(configFilePath)
+	if err != nil {
+		return ContainerInfo{}, err
+	}
+	// 从本地配置文件中读取文件信息
+	var containerInfo ContainerInfo
+	if err := json.Unmarshal(contentBytes, &containerInfo); err != nil {
+		return ContainerInfo{}, err
+	}
+	return containerInfo, nil
+}
+
+// 根据容器名和更新信息 更新 配置文件
+func updateContainerInfoByName(newContainerInfo *ContainerInfo) error {
+	// 拼接完整的配置文件路径
+	configFilePath := fmt.Sprintf(DefaultInfoPath, newContainerInfo.Name) + ConfigName
+
+	// 将更新后的结构体转换成 JSON 格式
+	updatedContentBytes, err := json.Marshal(newContainerInfo)
+
+	if err != nil {
+		return err // 返回错误
+	}
+	// 将更新后的内容写回到配置文件
+	if err = os.WriteFile(configFilePath, updatedContentBytes, 0644); err != nil {
+		return err // 返回错误
+	}
+
+	return nil
 }

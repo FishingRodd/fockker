@@ -25,6 +25,8 @@ func main() {
 		InitCommand,
 		RunCommand,
 		ListCommand,
+		StopCommand,
+		RemoveCommand,
 	}
 
 	// 设置日志输出

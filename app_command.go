@@ -79,3 +79,29 @@ var ListCommand = cli.Command{
 		return nil
 	},
 }
+
+var StopCommand = cli.Command{
+	Name:  "stop",
+	Usage: "停止正在运行的容器",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 1 {
+			return fmt.Errorf("缺少容器名")
+		}
+		containerName := context.Args().Get(0)
+		container.StopContainer(containerName)
+		return nil
+	},
+}
+
+var RemoveCommand = cli.Command{
+	Name:  "rm",
+	Usage: "删除不使用的容器",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 1 {
+			return fmt.Errorf("缺少容器名")
+		}
+		containerName := context.Args().Get(0)
+		container.RemoveContainer(containerName)
+		return nil
+	},
+}

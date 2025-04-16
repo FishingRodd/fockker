@@ -212,7 +212,7 @@ func CreateMountPoint(imgPath string, writePath string, workPath string, nowMoun
 		log.Errorf("系统联合文件挂载点创建异常 %v", err)
 		return err
 	} else {
-		log.Infof(`系统联合文件挂载点创建成功 %s`, nowMountPath)
+		//log.Infof(`系统联合文件挂载点创建成功 %s`, nowMountPath)
 	}
 	return nil
 }
