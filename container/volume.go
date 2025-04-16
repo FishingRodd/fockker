@@ -79,42 +79,28 @@ func NewWorkSpace(imgName string, containerName string, volume string) error {
 	return nil
 }
 
+// MountVolume 实现宿主机与容器内部目录挂载
 func MountVolume(volumePaths []string, containerName string) {
 	// 宿主机内的挂载路径
-	parentUrl := volumePaths[0]
-	if err := os.Mkdir(parentUrl, 0777); err != nil {
-		log.Infof("宿主机创建目录 %s 时异常 %v", parentUrl, err)
+	parentPath := volumePaths[0]
+	if exists, _ := PathExists(parentPath); !exists { // 路径不存在则创建
+		if err := os.MkdirAll(parentPath, 0777); err != nil {
+			log.Errorf("宿主机目录 %s 创建异常 %v", parentPath, err)
+			return
+		}
 	}
 	// 容器内的挂载路径
 	containerUrl := volumePaths[1]
 	nowMountPath := fmt.Sprintf(MountPath, containerName)
-	containerVolumePath := nowMountPath + "/" + containerUrl
-	if err := os.Mkdir(containerVolumePath, 0777); err != nil {
-		log.Infof("容器内创建目录 %s 时异常 %v", containerVolumePath, err)
-	}
-	// 工作目录挂载路径
-	workPath := containerVolumePath + "/work"
-
-	exists, err := PathExists(workPath)
-	if err != nil {
-		log.Infof("用户工作目录 %s 判断异常: %v", workPath, err)
-	}
-
-	// 路径下不存在对应工作目录
-	if !exists {
-		if err := os.MkdirAll(workPath, 0777); err != nil {
-			log.Errorf("用户工作目录 %s 创建异常 %v", workPath, err)
+	containerVolumePath := nowMountPath + containerUrl
+	if exists, _ := PathExists(containerVolumePath); !exists { // 路径不存在则创建
+		if err := os.MkdirAll(containerVolumePath, 0777); err != nil {
+			log.Errorf("容器目录 %s 创建异常 %v", containerVolumePath, err)
+			return
 		}
 	}
-	// 使用overlayfs联合挂载
-	// lowerdir：底层目录，ro
-	// upperdir：上层目录，w
-	// workdir：在此处理需要的文件变更，将结果合并到最终的挂载点
-	//dirs := "dirs=" + parentUrl
-	dirs := "lowerdir=" + parentUrl + ",upperdir=" + containerVolumePath + ",workdir=" + workPath
-	_, err = exec.Command("mount", "-t", "overlay", "-o", dirs, "overlay", containerVolumePath).CombinedOutput()
-	if err != nil {
-		log.Errorf("用户联合文件挂载点创建异常 %v", err)
+	if err := syscall.Mount(parentPath, containerVolumePath, "bind", syscall.MS_BIND|syscall.MS_REC, ""); err != nil { // MS_BIND 创建绑定挂载，MS_REC 递归处理子挂载点
+		log.Errorf("用户文件挂载点创建异常 %v", err)
 	}
 }
 
@@ -167,7 +153,7 @@ func CreateReadOnlyLayer(imgName string) (string, error) {
 			log.Errorf("镜像目录 %s 解压异常 %v", imgPath, err)
 			return "", err
 		}
-		// TODO 本地镜像tar包不存在走网络获取镜像tar到rootPath
+		// TODO 本地镜像tar包不存在，则走网络获取镜像tar到rootPath
 	}
 	return imgPath, nil
 }
@@ -261,21 +247,14 @@ func DeleteMountPoint(nowMountPath string) {
 
 // DeleteMountPointWithVolume 删除联合挂载点，排除用户挂载
 func DeleteMountPointWithVolume(volumePaths []string, nowMountPath string) {
-	containerVolumePath := nowMountPath + "/" + volumePaths[1]
-	if _, err := exec.Command("umount", containerVolumePath).CombinedOutput(); err != nil {
-		log.Errorf("卸载容器挂载点 %s 时异常. %v", containerVolumePath, err)
-	}
-	workPath := containerVolumePath + "/work"
-	if err := os.RemoveAll(workPath); err != nil {
-		log.Errorf("删除容器挂载点目录 %s 时异常 %v", workPath, err)
-	}
-
 	if err := syscall.Unmount(nowMountPath, syscall.MNT_DETACH); err != nil {
 		log.Errorf("卸载联合挂载点 %s 时异常: %v", nowMountPath, err)
+		return
 	}
 
 	if err := os.RemoveAll(nowMountPath); err != nil {
 		log.Errorf("删除系统挂载点目录 %s 时异常 %v", nowMountPath, err)
+		return
 	}
 }
 

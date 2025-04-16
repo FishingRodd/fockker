@@ -9,6 +9,7 @@ import (
 
 // RunC 根据入参运行容器进程
 func RunC(cmdArry []string, imgName string, containerName string, createTTY bool, volume string) {
+	// 创建容器初始化进程
 	processCmd, writePipe := container.NewContainerProcess(imgName, containerName, createTTY, volume)
 	if processCmd == nil {
 		log.Errorf(`容器初始化进程异常`)
@@ -17,9 +18,16 @@ func RunC(cmdArry []string, imgName string, containerName string, createTTY bool
 
 	if err := processCmd.Start(); err != nil {
 		log.Errorf(`容器初始化进程启动失败: %v`, err)
+		return
 	}
 
-	// recordContainerInfo
+	// 保存容器信息
+	containerName, _, err := container.RecordContainerInfo(processCmd.Process.Pid, cmdArry, containerName, volume)
+	// _ = containerID
+	if err != nil {
+		log.Errorf("保存容器信息异常 %v", err)
+		return
+	}
 
 	// cgroup限制
 

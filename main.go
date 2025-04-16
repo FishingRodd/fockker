@@ -24,6 +24,7 @@ func main() {
 	app.Commands = []cli.Command{
 		InitCommand,
 		RunCommand,
+		ListCommand,
 	}
 
 	// 设置日志输出

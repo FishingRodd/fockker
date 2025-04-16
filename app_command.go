@@ -70,3 +70,12 @@ var RunCommand = cli.Command{
 		return nil
 	},
 }
+
+var ListCommand = cli.Command{
+	Name:  "ps",
+	Usage: "显示所有容器",
+	Action: func(c *cli.Context) error {
+		container.ListContainers()
+		return nil
+	},
+}
