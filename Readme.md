@@ -25,12 +25,17 @@ git clone https://github.com/FishingRodd/fockker.git
 │  app_command.go   CLI定义入口
 │  run.go           统一运行入口
 │
-└─container
-        config.go   统一保存和管理模块下的配置信息
-        init.go     负责容器进程的创建、初始化
-        list.go     负责容器信息的获取、更新、删除
-        manage.go   负责容器运行时的停止、删除
-        volume.go   负责容器文件系统挂载的、创建、删除
+├─container
+│       config.go   统一管理容器模块下的配置信息
+│       init.go     负责容器进程的创建、初始化
+│       list.go     负责容器信息的获取、更新、删除
+│       manage.go   负责容器运行时的停止、删除
+│       volume.go   负责容器文件系统挂载的、创建、删除
+│
+└─nsenter
+        config.go   统一管理nsenter模块下的配置信息
+        main.go     cgo实现的基于setns进入容器namespace
+
 ```
 
 # 构建
