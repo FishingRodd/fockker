@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"fockker/container"
+	"fockker/nsenter"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"os"
 	"syscall"
@@ -102,6 +104,31 @@ var RemoveCommand = cli.Command{
 		}
 		containerName := context.Args().Get(0)
 		container.RemoveContainer(containerName)
+		return nil
+	},
+}
+
+var ExecCommand = cli.Command{
+	Name:  "exec",
+	Usage: "将命令执行到容器中",
+	Action: func(context *cli.Context) error {
+		// 容器进程callback
+		if os.Getenv(nsenter.EnvExecPid) != "" {
+			log.Infof("pid callback pid %d", os.Getgid())
+			return nil
+		}
+
+		if len(context.Args()) < 2 {
+			return fmt.Errorf("缺少容器名或入参")
+		}
+		containerName := context.Args().Get(0)
+
+		// 提取入参
+		var cmdArry []string
+		for _, arg := range context.Args().Tail() {
+			cmdArry = append(cmdArry, arg)
+		}
+		container.ExecContainer(containerName, cmdArry)
 		return nil
 	},
 }

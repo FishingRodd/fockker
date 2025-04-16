@@ -2,9 +2,12 @@ package container
 
 import (
 	"fmt"
+	"fockker/nsenter"
 	log "github.com/sirupsen/logrus"
 	"os"
+	"os/exec"
 	"strconv"
+	"strings"
 	"syscall"
 )
 
@@ -60,4 +63,46 @@ func RemoveContainer(containerName string) {
 	}
 	DeleteWorkSpace(containerInfo.Volume, containerName)
 	fmt.Printf("容器: %s, ID: %s, 已删除\n", containerName, containerInfo.Id)
+}
+
+// ExecContainer 在容器中执行命令
+func ExecContainer(containerName string, cmdArry []string) {
+	containerInfo, err := getContainerInfoByName(containerName)
+	pid := containerInfo.Pid
+
+	if err != nil {
+		log.Errorf("获取容器信息 %s 异常 %v", containerName, err)
+		return
+	}
+
+	// 拼接command参数
+	cmdStr := strings.Join(cmdArry, " ")
+	// 预定义command
+	cmd := exec.Command("/proc/self/exe", "exec") // 传递exec，会在容器进程内再运行一次exec方法
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	// 通过环境变量向cgo定义的nsenter传递参数
+	_ = os.Setenv(nsenter.EnvExecPid, pid)
+	_ = os.Setenv(nsenter.EnvExecCmd, cmdStr)
+	// 根据PID获取进程的environments。将 当前环境变量、容器内环境变量 合并添加到command
+	containerEnvs := getEnvsByPid(pid)
+	cmd.Env = append(os.Environ(), containerEnvs...)
+	// 启动command
+	if err := cmd.Run(); err != nil {
+		log.Errorf("执行容器 %s, PID: %s, 异常: %v", containerName, pid, err)
+	}
+}
+
+// 根据进程PID获取environments
+func getEnvsByPid(pid string) []string {
+	path := fmt.Sprintf("/proc/%s/environ", pid)
+	contentBytes, err := os.ReadFile(path)
+	if err != nil {
+		log.Errorf("读取proc文件 %s 异常 %v", path, err)
+		return nil
+	}
+	// env的分隔符是 \u0000 ，使用split分割为[]string
+	envs := strings.Split(string(contentBytes), "\u0000")
+	return envs
 }

@@ -85,3 +85,9 @@ fockker stop testContainer
 fockker rm testContainer
 容器: testContainer, ID: 5213989969, 已删除
 ```
+
+6. 进入正在运行的容器
+
+```sh
+fockker exec testContainer sh
+```

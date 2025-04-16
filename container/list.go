@@ -103,7 +103,7 @@ func RecordContainerInfo(containerPID int, cmdArry []string, containerName strin
 	}
 	// 初始化容器状态信息
 	createTime := time.Now().Format("2006-01-02 15:04:05")
-	command := strings.Join(cmdArry, "")
+	command := strings.Join(cmdArry, " ")
 	containerInfo := &ContainerInfo{
 		Id:          containerID,
 		Pid:         strconv.Itoa(containerPID),

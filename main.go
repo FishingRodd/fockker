@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	_ "fockker/nsenter" // nsenter引用(必要)
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"os"
@@ -11,9 +12,7 @@ import (
 
 const (
 	appName = "fockker"
-	usage   = `fockker是一个简单的容器运行时实现
-			   为学习简单golang开发与docker底层原理而开展
-			   参考：github.com/xianlubird/mydocker`
+	usage   = `fockker是一个轻量的容器引擎实现`
 )
 
 func main() {
@@ -27,6 +26,7 @@ func main() {
 		ListCommand,
 		StopCommand,
 		RemoveCommand,
+		ExecCommand,
 	}
 
 	// 设置日志输出
