@@ -1,5 +1,9 @@
 package container
 
+import (
+	"fockker/constants"
+)
+
 // 容器运行与挂载路径
 var (
 	RootPath       string = "/root"
@@ -11,12 +15,12 @@ var (
 
 // 容器运行状态与管理路径
 var (
+	DefaultInfoPath string = constants.RunPath + "/%s/"
+	ConfigName      string = "config.json"
+	LogFileName     string = "container.log"
 	RUNNING         string = "running"
 	STOP            string = "stopped"
 	Exit            string = "exited"
-	DefaultInfoPath string = "/var/run/fockker/%s/"
-	ConfigName      string = "config.json"
-	LogFileName     string = "container.log"
 )
 
 // ContainerInfo 容器状态信息
@@ -29,42 +33,5 @@ type ContainerInfo struct {
 	Status      string   `json:"status"`      // 容器的状态
 	Volume      string   `json:"volume"`      // 容器的数据卷
 	PortMapping []string `json:"portmapping"` // 端口映射
+	NetworkName string   `json:"networkname"` // 加入的容器网络
 }
-
-// 启动容器后，挂载路径如下所示
-// .
-// ├── busybox
-// │    ├── bin
-// │    ├── dev
-// │    ├── etc
-// │    ├── home
-// │    ├── lib
-// │    ├── lib64 -> lib
-// │    ├── proc
-// │    ├── root
-// │    ├── sys
-// │    ├── tmp
-// │    ├── usr
-// │    └── var
-// ├── mnt
-// │    └── test_container
-// │        ├── hello.txt
-// │        ├── bin
-// │        ├── dev
-// │        ├── etc
-// │        ├── home
-// │        ├── lib
-// │        ├── lib64 -> lib
-// │        ├── proc
-// │        ├── root
-// │        ├── sys
-// │        ├── tmp
-// │        ├── usr
-// │        └── var
-// ├── workLayer
-// │    └── test_container
-// │        └── work
-// └── writeLayer
-//      └── test_container
-//          ├── hello.txt
-//          └── root

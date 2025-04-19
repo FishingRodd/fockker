@@ -95,7 +95,7 @@ func getContainerInfo(entry os.DirEntry) (*ContainerInfo, error) {
 }
 
 // RecordContainerInfo 记录容器信息，启用于容器创建时
-func RecordContainerInfo(containerPID int, cmdArry []string, containerName string, volume string) (string, string, error) {
+func RecordContainerInfo(containerPID int, cmdArry []string, containerName string, volume string, networkName string, portMapping []string) (*ContainerInfo, error) {
 	// 不指定容器名则使用ID作为容器名
 	containerID := generateContainerID(10)
 	if containerName == "" {
@@ -112,12 +112,14 @@ func RecordContainerInfo(containerPID int, cmdArry []string, containerName strin
 		Status:      RUNNING,
 		Name:        containerName,
 		Volume:      volume,
+		NetworkName: networkName,
+		PortMapping: portMapping,
 	}
 	// 序列化容器状态信息
 	jsonBytes, err := json.Marshal(containerInfo)
 	if err != nil {
 		log.Errorf("序列化容器状态信息异常 %v", err)
-		return "", "", err
+		return &ContainerInfo{}, err
 	}
 	containerJsonInfo := string(jsonBytes) // 保存为JSON格式字符
 
@@ -125,7 +127,7 @@ func RecordContainerInfo(containerPID int, cmdArry []string, containerName strin
 	dirPath := fmt.Sprintf(DefaultInfoPath, containerName)
 	if err := os.MkdirAll(dirPath, 0622); err != nil {
 		log.Errorf("配置路径 %s 创建异常 %v", dirPath, err)
-		return "", "", err
+		return &ContainerInfo{}, err
 	}
 	configPath := dirPath + "/" + ConfigName
 	configFile, err := os.Create(configPath)
@@ -140,16 +142,16 @@ func RecordContainerInfo(containerPID int, cmdArry []string, containerName strin
 	// error handle
 	if err != nil {
 		log.Errorf("创建容器状态文件 %s 异常 %v", configPath, err)
-		return "", "", err
+		return &ContainerInfo{}, err
 	}
 	// 写入配置文件
 	if _, err := configFile.WriteString(containerJsonInfo); err != nil {
 		log.Errorf("写入容器状态信息异常 %v", err)
-		return "", "", err
+		return &ContainerInfo{}, err
 	}
 
 	// 返回容器名、容器ID、err
-	return containerName, containerID, nil
+	return containerInfo, nil
 }
 
 // 生成容器ID

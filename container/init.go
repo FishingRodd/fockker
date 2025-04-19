@@ -41,16 +41,9 @@ func NewContainerProcess(imgName string, containerName string, createTTY bool, v
 		cmd.Stderr = os.Stderr
 	} else {
 		// 给后台运行的容器定义日志输出路径
-		dirPath := fmt.Sprintf(DefaultInfoPath, containerName)
-		if err = os.MkdirAll(dirPath, 0622); err != nil {
-			log.Errorf("配置路径 %s 创建异常 %v", dirPath, err)
-			return nil, nil
-		}
-		// 配置日志文件路径
-		stdLogFilePath := dirPath + LogFileName
-		stdLogFile, err := os.Create(stdLogFilePath)
+		stdLogFile, err := CreateLogFile(containerName)
 		if err != nil {
-			log.Errorf("日志文件 %s 创建异常 %v", stdLogFilePath, err)
+			log.Errorf("日志文件 %s 创建异常 %v", containerName, err)
 			return nil, nil
 		}
 		cmd.Stdout = stdLogFile

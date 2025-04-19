@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"fockker/container"
+	"fockker/network"
 	"fockker/nsenter"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -13,7 +14,7 @@ import (
 // InitCommand 不可显式调用。容器在执行/proc/self/exe后触发的方法
 var InitCommand = cli.Command{
 	Name: "init",
-	Action: func(c *cli.Context) error {
+	Action: func(context *cli.Context) error {
 		err := container.RunContainerInitProcess()
 		if err != nil {
 			nowPath, _ := os.Getwd()
@@ -44,31 +45,45 @@ var RunCommand = cli.Command{
 			Name:  "v",
 			Usage: `宿主机与容器挂载，实现持久化存储`,
 		},
+		cli.StringFlag{
+			Name:  "net",
+			Usage: `连接到容器网络`,
+		},
+		cli.StringFlag{
+			Name:  "p",
+			Usage: `宿主机与容器端口映射`,
+		},
+		// TODO e 指定environment
+		// TODO net 加入容器网络
+		// TODO start 启动进入stopped状态的容器
+		// TODO cgroup资源限制
 	},
-	Action: func(c *cli.Context) error {
-		if len(c.Args()) < 1 {
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 1 {
 			return fmt.Errorf(`缺少command参数`)
 		}
 
 		// 提取输入的参数
 		var cmdArry []string // cmd参数列表
 		var imgName string   // 镜像名称
-		for _, arg := range c.Args() {
+		for _, arg := range context.Args() {
 			cmdArry = append(cmdArry, arg)
 		}
 		imgName = cmdArry[0]
 		cmdArry = cmdArry[1:]
 
 		// 入参解析
-		createTTY := c.Bool("it")         // 是否创建可交互终端
-		detach := c.Bool("d")             // 是否分离父子进程（即后台运行）
-		containerName := c.String("name") // 容器运行名称
-		volume := c.String("v")           // 宿主机与容器挂载
+		createTTY := context.Bool("it")         // 是否创建可交互终端
+		detach := context.Bool("d")             // 是否分离父子进程（即后台运行）
+		containerName := context.String("name") // 容器运行名称
+		volume := context.String("v")           // 宿主机与容器挂载
+		portMapping := context.StringSlice("p") // 宿主机与容器端口映射
+		network := context.String("net")        // 连接到容器网络
 
 		if createTTY && detach {
 			return fmt.Errorf(`不可同时指定 'it' 创建终端 与 'd' 后台运行`)
 		}
-		RunC(cmdArry, imgName, containerName, createTTY, volume)
+		RunC(cmdArry, imgName, containerName, createTTY, volume, network, portMapping)
 		return nil
 	},
 }
@@ -76,7 +91,7 @@ var RunCommand = cli.Command{
 var ListCommand = cli.Command{
 	Name:  "ps",
 	Usage: "显示所有容器",
-	Action: func(c *cli.Context) error {
+	Action: func(context *cli.Context) error {
 		container.ListContainers()
 		return nil
 	},
@@ -130,5 +145,82 @@ var ExecCommand = cli.Command{
 		}
 		container.ExecContainer(containerName, cmdArry)
 		return nil
+	},
+}
+
+var LogCommand = cli.Command{
+	Name:  "logs",
+	Usage: "打印容器日志",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 1 {
+			return fmt.Errorf("请输入容器名")
+		}
+		containerName := context.Args().Get(0)
+		container.GetLogContent(containerName)
+		return nil
+	},
+}
+
+var NetwormCommand = cli.Command{
+	Name:  "network",
+	Usage: "容器网络命令行",
+	Subcommands: []cli.Command{
+		{
+			Name:  "create",
+			Usage: "创建容器网络",
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:  "type",
+					Usage: "network driver",
+				},
+				cli.StringFlag{
+					Name:  "subnet",
+					Usage: "subnet cidr",
+				},
+			},
+			Action: func(context *cli.Context) error {
+				if len(context.Args()) < 1 {
+					return fmt.Errorf("缺少网络名称")
+				}
+				networkName := context.Args()[0]
+				netType := context.String("type")
+				ipRange := context.String("subnet")
+				// 未指定网段则使用默认
+				var networkType network.NetworkType
+				if netType == "" {
+					networkType = network.Bridge
+				} else {
+					networkType = network.NetworkType(netType)
+				}
+				err := network.CreateNetwork(networkName, networkType, ipRange)
+				if err != nil {
+					return fmt.Errorf("网络创建异常: %v", err)
+				}
+				return nil
+			},
+		},
+		{
+			Name:  "ls",
+			Usage: "显示当前所有容器网络",
+			Action: func(context *cli.Context) error {
+				network.ListNetwork()
+				return nil
+			},
+		},
+		{
+			Name:  "rm",
+			Usage: "删除容器网络",
+			Action: func(context *cli.Context) error {
+				if len(context.Args()) < 1 {
+					return fmt.Errorf("缺少网络名称")
+				}
+				networkName := context.Args()[0]
+				err := network.DistoryNetwork(networkName)
+				if err != nil {
+					return fmt.Errorf("网络删除异常: %v", err)
+				}
+				return nil
+			},
+		},
 	},
 }

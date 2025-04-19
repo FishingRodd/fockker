@@ -55,6 +55,8 @@ func RemoveContainer(containerName string) {
 		log.Errorf("无法删除正在运行的容器")
 		return
 	}
+	// 从网络中断开连接（容器进入STOP状态时就已会自动删除veth接口）
+	// network.DisconnectFromNetwork(containerInfo.NetworkName, containerInfo.Id)
 	// 拼接配置文件路径
 	dirURL := fmt.Sprintf(DefaultInfoPath, containerName)
 	if err := os.RemoveAll(dirURL); err != nil {
