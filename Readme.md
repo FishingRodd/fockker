@@ -2,12 +2,12 @@
 
 参考：[自己动手写docker](https://github.com/xianlubird/mydocker)
 
-重新整理了一下项目结构，项目中添加了大量中文注释。
+基于上述项目进行开发，在此基础对开发环境进行了升级，联合文件系统弃用较老的aufs，对网络模块的代码进行了重新整理实现，添加了一个daemon进程用于监控容器状态，修复了BUG，并对项目中存在的问题添加了`TODO`，同时在项目中添加了大量中文注释。
 
 # 环境
-开发环境基于Ubuntu 24.10、Kernel 6.11.0-21-generic
+开发环境基于Ubuntu 24.10、Kernel 6.11.0-21-generic。
 
-cgroup版本为cgroup2fs
+cgroup版本为cgroup2fs。
 
 
 # 介绍
@@ -21,7 +21,7 @@ cgroup版本为cgroup2fs
 - 不得创建网段重复的容器网络
 
 守护进程：每个detach容器启动时都会附带一个Daemon进程，用于监听容器的运行情况
- 
+
 # 获取
 
 ```sh
@@ -223,3 +223,11 @@ fockker run --it --name testContainer --m 100m busybox sh
 容器 testContainer 启动成功
 / # 
 ```
+
+12. 查看容器日志
+
+```sh
+fockker logs testContainer
+这里是日志内容...
+```
+
