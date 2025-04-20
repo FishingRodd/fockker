@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 	"fockker/container"
+	"fockker/container/cgroups"
 	"fockker/network"
 	"fockker/nsenter"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 	"os"
-	"syscall"
+	"strconv"
 )
 
 // InitCommand 不可显式调用。容器在执行/proc/self/exe后触发的方法
@@ -17,8 +18,7 @@ var InitCommand = cli.Command{
 	Action: func(context *cli.Context) error {
 		err := container.RunContainerInitProcess()
 		if err != nil {
-			nowPath, _ := os.Getwd()
-			_ = syscall.Unmount(nowPath, syscall.MNT_DETACH)
+			// 启动容器进程时的异常，由daemon进行处理
 		}
 		return err
 	},
@@ -53,10 +53,23 @@ var RunCommand = cli.Command{
 			Name:  "p",
 			Usage: `宿主机与容器端口映射`,
 		},
-		// TODO e 指定environment
-		// TODO net 加入容器网络
+		cli.StringSliceFlag{
+			Name:  "e",
+			Usage: "设置容器内environment",
+		},
+		cli.StringFlag{
+			Name:  "m",
+			Usage: "memory限制",
+		},
+		cli.StringFlag{
+			Name:  "cpushare",
+			Usage: "cpushare限制",
+		},
+		cli.StringFlag{
+			Name:  "cpuset",
+			Usage: "cpuset限制",
+		},
 		// TODO start 启动进入stopped状态的容器
-		// TODO cgroup资源限制
 	},
 	Action: func(context *cli.Context) error {
 		if len(context.Args()) < 1 {
@@ -79,11 +92,17 @@ var RunCommand = cli.Command{
 		volume := context.String("v")           // 宿主机与容器挂载
 		portMapping := context.StringSlice("p") // 宿主机与容器端口映射
 		network := context.String("net")        // 连接到容器网络
+		envSlice := context.StringSlice("e")    // 设置环境变量
+		resourceConf := &cgroups.ResourceConfig{
+			MemoryLimit: context.String("m"),
+			CPUSet:      context.String("cpuset"),
+			CPUShares:   context.String("cpushare"),
+		}
 
 		if createTTY && detach {
 			return fmt.Errorf(`不可同时指定 'it' 创建终端 与 'd' 后台运行`)
 		}
-		RunC(cmdArry, imgName, containerName, createTTY, volume, network, portMapping)
+		RunC(cmdArry, imgName, containerName, createTTY, volume, network, portMapping, envSlice, resourceConf)
 		return nil
 	},
 }
@@ -222,5 +241,21 @@ var NetwormCommand = cli.Command{
 				return nil
 			},
 		},
+	},
+}
+
+var DaemonCommand = cli.Command{
+	Name:  "daemon",
+	Usage: "停止正在运行的容器",
+	Action: func(context *cli.Context) error {
+		if len(context.Args()) < 3 {
+			return fmt.Errorf("缺少容器PID、cgroupPath, 容器名")
+		}
+		pid := context.Args().Get(0)
+		cgroupPath := context.Args().Get(1)
+		containerName := context.Args().Get(2)
+		intPid, _ := strconv.Atoi(pid)
+		container.RunDaemon(intPid, cgroupPath, containerName)
+		return nil
 	},
 }

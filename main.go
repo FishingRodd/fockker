@@ -25,7 +25,8 @@ func main() {
 		RemoveCommand,  // 容器删除
 		ExecCommand,    // 容器执行
 		LogCommand,     // 容器日志
-		NetwormCommand, //容器网络
+		NetwormCommand, // 容器网络
+		DaemonCommand,  // Daemon进程
 		// TODO BuildCommand 容器构建
 	}
 

@@ -44,7 +44,7 @@ func ListContainers() {
 			if errors.Is(err, syscall.ESRCH) {
 				// 返回的错误是os.ErrProcess, 表示进程不存在
 				tmpContainer.Status = STOP
-				err = updateContainerInfoByName(tmpContainer)
+				err = UpdateContainerInfoByName(tmpContainer)
 				if err != nil {
 					log.Errorf("更新容器%s信息异常 %v", tmpContainer.Name, err)
 					continue
@@ -165,8 +165,8 @@ func generateContainerID(n int) string {
 	return string(b)
 }
 
-// 根据容器名 获取 配置文件中的信息
-func getContainerInfoByName(containerName string) (ContainerInfo, error) {
+// GetContainerInfoByName 根据容器名 获取 配置文件中的信息
+func GetContainerInfoByName(containerName string) (ContainerInfo, error) {
 	dirURL := fmt.Sprintf(DefaultInfoPath, containerName)
 	configFilePath := dirURL + ConfigName
 	contentBytes, err := os.ReadFile(configFilePath)
@@ -182,7 +182,7 @@ func getContainerInfoByName(containerName string) (ContainerInfo, error) {
 }
 
 // 根据容器名和更新信息 更新 配置文件
-func updateContainerInfoByName(newContainerInfo *ContainerInfo) error {
+func UpdateContainerInfoByName(newContainerInfo *ContainerInfo) error {
 	// 拼接完整的配置文件路径
 	configFilePath := fmt.Sprintf(DefaultInfoPath, newContainerInfo.Name) + ConfigName
 

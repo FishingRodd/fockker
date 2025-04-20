@@ -13,12 +13,12 @@ import (
 
 // StopContainer 停止正在运行的容器
 func StopContainer(containerName string) {
-	containerInfo, err := getContainerInfoByName(containerName)
-	pid := containerInfo.Pid
+	containerInfo, err := GetContainerInfoByName(containerName)
 	if err != nil {
 		log.Errorf("获取容器信息 %s 异常 %v", containerName, err)
 		return
 	}
+	pid := containerInfo.Pid
 	pidInt, _ := strconv.Atoi(pid) // string 转换 int
 	// 中止进程
 	// SIGTERM：终止信号，通常用于请求程序优雅地终止。 -15
@@ -32,7 +32,7 @@ func StopContainer(containerName string) {
 		// 更新配置文件中的容器信息
 		containerInfo.Status = STOP
 		containerInfo.Pid = "-"
-		err = updateContainerInfoByName(&containerInfo)
+		err = UpdateContainerInfoByName(&containerInfo)
 		if err != nil {
 			log.Errorf("更新容器%s信息异常 %v", containerName, err)
 			return
@@ -46,7 +46,7 @@ func StopContainer(containerName string) {
 
 // RemoveContainer 删除容器
 func RemoveContainer(containerName string) {
-	containerInfo, err := getContainerInfoByName(containerName)
+	containerInfo, err := GetContainerInfoByName(containerName)
 	if err != nil {
 		log.Errorf("获取容器信息 %s 异常 %v", containerName, err)
 		return
@@ -69,7 +69,7 @@ func RemoveContainer(containerName string) {
 
 // ExecContainer 在容器中执行命令
 func ExecContainer(containerName string, cmdArry []string) {
-	containerInfo, err := getContainerInfoByName(containerName)
+	containerInfo, err := GetContainerInfoByName(containerName)
 	pid := containerInfo.Pid
 
 	if err != nil {

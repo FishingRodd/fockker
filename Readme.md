@@ -7,6 +7,9 @@
 # 环境
 开发环境基于Ubuntu 24.10、Kernel 6.11.0-21-generic
 
+cgroup版本为cgroup2fs
+
+
 # 介绍
 
 基于 Go 1.23.0 实现的轻量级容器引擎，自研学习用。
@@ -16,6 +19,8 @@
 网络：支持创建Bridge类型网络，在使用本cli时会自动生成一个fockker0的bridge网络，类似于docker0实现。
 
 - 不得创建网段重复的容器网络
+
+守护进程：每个detach容器启动时都会附带一个Daemon进程，用于监听容器的运行情况
  
 # 获取
 
@@ -38,6 +43,7 @@ git clone https://github.com/FishingRodd/fockker.git
 │       list.go             负责容器信息的获取、更新、删除
 │       manage.go           负责容器运行时的停止、删除
 │       volume.go           负责容器文件系统挂载的、创建、删除
+│       daemon.go           负责监听detach容器的运行情况
 │
 ├─network                   网络模块
 │  │  config.go             统一管理网络模块下的配置信息

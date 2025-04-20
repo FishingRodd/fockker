@@ -194,3 +194,43 @@ func (net *Network) configPortMapping(ep *Endpoint) error {
 	}
 	return nil
 }
+
+// 判断两个网络是否属于同一网络位
+func isSameNetwork(net1, net2 *nw.IPNet) bool {
+	// 比较掩码和网络地址
+	return net1.IP.Equal(net2.IP) && net1.Mask.String() == net2.Mask.String()
+}
+
+// 生成新网络配置
+func incrementNetwork(ipNet *nw.IPNet) string {
+	// 获取掩码位数
+	ones, _ := ipNet.Mask.Size()
+
+	// 计算网络块增量
+	blockSize := 1 << (32 - ones)
+
+	// 将IP转换为32位整型
+	ipInt := ipToInt(ipNet.IP)
+
+	// 计算新网络地址
+	newIP := intToIP(ipInt + uint32(blockSize))
+
+	// 返回新CIDR格式
+	return fmt.Sprintf("%s/%d", newIP, ones)
+}
+
+// IP转32位整型
+func ipToInt(ip nw.IP) uint32 {
+	ip = ip.To4()
+	return uint32(ip[0])<<24 | uint32(ip[1])<<16 | uint32(ip[2])<<8 | uint32(ip[3])
+}
+
+// 32位整型转IP
+func intToIP(n uint32) nw.IP {
+	return nw.IPv4(
+		byte(n>>24),
+		byte(n>>16),
+		byte(n>>8),
+		byte(n),
+	)
+}

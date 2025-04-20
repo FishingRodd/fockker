@@ -140,11 +140,23 @@ func ListNetwork() {
 
 // CreateNetwork 创建网络
 func CreateNetwork(networkName string, networkType NetworkType, subnet string) error {
-	// 未指定网段则使用默认
+	// 未指定网段则按照默认网络位增量添加
 	if subnet == "" {
 		subnet = defaultSubnet
 	}
-	// TODO 网段冲突判断
+	// 解析网络配置，取网络位
+	_, baseNet, _ := nw.ParseCIDR(subnet)
+	// 网段冲突判断，如果用户输入重复则增量添加网络位
+	for _, net := range networks {
+		// 解析网络配置，取网络位
+		_, targetNet, _ := nw.ParseCIDR(net.IpRange.String())
+		// 判断网络位是否相同
+		if isSameNetwork(baseNet, targetNet) {
+			// 生成新网络配置
+			subnet = incrementNetwork(baseNet)
+			fmt.Printf("该网段与 %s网络 重复, 已为%s重新生成网段: %s\n", net.Name, networkName, subnet)
+		}
+	}
 	net := &Network{
 		Name:        networkName,
 		NetworkType: networkType,
@@ -168,7 +180,7 @@ func CreateNetwork(networkName string, networkType NetworkType, subnet string) e
 	default:
 		return fmt.Errorf("不支持的网络类型 %s", networkType)
 	}
-	fmt.Printf("网络: %s, 创建成功\n", networkName)
+	fmt.Printf("网络: %s, 网段:%s, 创建成功\n", networkName, subnet)
 	return nil
 }
 

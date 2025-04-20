@@ -5,10 +5,16 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
+	"strings"
 )
 
 // GetLogContent 根据文件获取日志内容，输出到屏幕
 func GetLogContent(containerName string) {
+	_, err := GetContainerInfoByName(containerName)
+	if err != nil && strings.Contains(err.Error(), "no such file") {
+		fmt.Printf("容器 %s 日志获取失败: 该容器不存在\n", containerName)
+		return
+	}
 	dirURL := fmt.Sprintf(DefaultInfoPath, containerName)
 	logFilePath := dirURL + LogFileName
 	file, err := os.Open(logFilePath)

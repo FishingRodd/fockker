@@ -12,7 +12,7 @@ import (
 )
 
 // NewContainerProcess 创建容器进程
-func NewContainerProcess(imgName string, containerName string, createTTY bool, volume string) (*exec.Cmd, *os.File) {
+func NewContainerProcess(imgName string, containerName string, createTTY bool, volume string, envSlice []string) (*exec.Cmd, *os.File) {
 	// 容器进程与宿主机进程通过管道互相传递参数。容器读，宿主写
 	readPipe, writePipe, err := os.Pipe()
 	if err != nil {
@@ -60,7 +60,7 @@ func NewContainerProcess(imgName string, containerName string, createTTY bool, v
 	// 即使通过 pivotRoot 切换了根文件系统，进程的“当前工作目录”仍是挂载命名空间内的路径。
 	// 如果未设置 cmd.Dir，进程可能仍在宿主机的文件系统上下文中操作而导致挂载/proc引发`no such file or directory`
 	cmd.Dir = fmt.Sprintf(MountPath, containerName)
-	// cmd.Env
+	cmd.Env = append(os.Environ(), envSlice...)
 	return cmd, writePipe
 }
 
