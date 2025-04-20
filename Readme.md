@@ -199,7 +199,7 @@ fockker network create testNetwork
 
 10. 基于容器网络的容器端口映射
 ```sh
-fockker run --it --name testContainer --p 80:80 busybox top -b
+fockker run --it --name testContainer --p 80:80 busybox sh
 容器 testContainer 启动成功
 / # 
 ```
@@ -215,4 +215,11 @@ fockker run --it --name testContainer --p 80:80 busybox top -b
 ```sh
 / # nc -lp 80
 hello container
+```
+
+11. 容器资源限制，设置最大内存100m
+```sh
+fockker run --it --name testContainer --m 100m busybox sh
+容器 testContainer 启动成功
+/ # 
 ```
